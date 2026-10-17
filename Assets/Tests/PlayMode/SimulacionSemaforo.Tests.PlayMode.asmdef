@@ -1,0 +1,23 @@
+{
+    "name": "SimulacionSemaforo.Tests.PlayMode",
+    "rootNamespace": "SimulacionSemaforo.Tests",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "SimulacionSemaforo.Logica",
+        "SimulacionSemaforo.Simulacion"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
