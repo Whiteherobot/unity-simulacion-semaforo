@@ -1,80 +1,84 @@
-# Traffic Simulation in Unity 
+# unity-simulacion-semaforo
 
-## Description
+Simulación en Unity de una intersección con un semáforo que reparte el verde
+según cuántos autos esperan en cada calle. Es la parte en Unity del proyecto
+final de Inteligencia Artificial (julio de 2025), hecho en grupo; la parte en
+Python, que cuenta los vehículos con YOLOv8 y estima el riesgo con lógica
+difusa, está en
+[ia-practicas](https://github.com/Whiteherobot/ia-practicas/tree/main/07-semaforo-inteligente).
 
-This project is a traffic simulation developed in Unity, aimed at experimenting with traffic cameras, automatic signals, and backend communication for image processing and traffic light control. The goal is to create a virtual environment to test computer vision algorithms and real-time traffic control logic.
+![Autos esperando en rojo mientras el otro carril tiene verde](docs/cola-en-rojo.png)
 
-## Main Features
+| Al empezar | Ciclo siguiente: más verde para A |
+|---|---|
+| ![Inicio](docs/inicio.png) | ![Nuevo ciclo](docs/nuevo-ciclo.png) |
 
-- **Image capture from virtual cameras** using custom scripts.
-- **Backend communication** via HTTP for sending images and receiving control signals.
-- **Dynamic traffic light control** based on backend responses.
-- **Modular structure** to facilitate integration of new models, materials, and AI systems.
-- **Use of custom prefabs and assets** for urban scenarios.
-- **Automated capture and send cycles** using Unity coroutines.
-- **Professional version control** using Git and a Unity-adapted `.gitignore`.
+- Dos calles de un sentido se cruzan: A (de oeste a este, con más tráfico) y B
+  (de sur a norte). Los autos, camionetas y buses llegan al azar.
+- Cada vehículo acelera hasta unos 40 km/h, frena para no pasar la línea con
+  rojo (con amarillo solo si alcanza a detenerse) y guarda distancia con el de
+  adelante.
+- Cada carril cuenta su cola (los vehículos a menos de 60 m de la línea), como
+  lo haría la cámara del proyecto original.
+- El ciclo dura 60 s: verde, 3 s de amarillo y 2 s de todo rojo para cada
+  carril. Al empezar cada ciclo, el verde (50 s en total) se reparte en
+  proporción a las colas, con un mínimo de 12 s por carril. Es la misma regla
+  que el programa en Python, sin la parte difusa.
+- El panel muestra la fase, el tiempo que le queda, las colas y el plan.
 
-## Important Note on Backend IP
+## Abrir y compilar
 
-To ensure proper communication with the backend system, the backend IP address was set to `192.168.30.190`.  
-**You must update this IP address in the following scripts:**
-- `TrafficCamera.cs`
-- `TrafficSignal.cs`
-- `CarController.cs`
+Con Unity 6.5 (6000.5.2f1): abrir la carpeta en Unity Hub y luego
+`Assets/Escenas/Interseccion.unity`. El menú **Simulación** vuelve a crear la
+escena y compila para Linux o Windows. Por línea de comandos:
 
-Make sure to replace any previous IP addresses with `192.168.30.190` in these files for the system to work correctly.
-
-## Project Structure
-
-```
-Assets/
-  ├── Scripts/                # Main logic (cameras, traffic control, etc.)
-  ├── Prefabs/                # Vehicle, traffic light prefabs, etc.
-  ├── Materials/              # Materials and textures
-  ├── Models/                 # 3D models
-  ├── Fantasy Skybox FREE/    # Skybox for environment
-  ├── ModularLowpolyStreetsFree/ # Urban streets and scenarios
-  └── TutorialInfo/           # Documentation and sample scripts
-Packages/
-  └── manifest.json           # Project dependencies
-.vscode/                      # Visual Studio Code configuration
-.gitignore                    # Exclusion of unnecessary files
+```bash
+Unity -batchmode -quit -projectPath . -executeMethod SimulacionSemaforo.Editor.Construir.Linux
+Builds/Linux/Simulacion.x86_64 -batchmode -capturas capturas/   # guarda tres imágenes y se cierra
 ```
 
-## Installation and Usage
+## Estructura
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Whiteherobot/SImulacionCar.git
-   ```
-2. **Open the folder in Unity Hub** and select the recommended Unity version.
-3. **Install required assets:**  
-   Download and import the following free assets from the Unity Asset Store if they are not already present:
-   - **Fantasy Skybox FREE**
-   - **Modular Lowpoly Streets Free**
-4. **Update the backend IP address** to `192.168.30.190` in `TrafficCamera.cs`, `TrafficSignal.cs`, and `CarController.cs` if not already set.
-5. **Configure the backend** (see Backend section) if you want to test real-time communication.
-6. **Open the main scene** in Unity.
-7. **Press Play** to run the simulation and observe the behavior of the cameras and traffic lights.
+```
+Assets/Scripts/Logica/       reparto del verde y fases del semáforo (C# sin Unity)
+Assets/Scripts/Simulacion/   escena: calles, vehículos, postes, panel y capturas
+Assets/Editor/Construir.cs   crea la escena y el material, y compila
+Assets/Tests/EditMode/       pruebas de la lógica
+Assets/Tests/PlayMode/       pruebas sobre la escena real
+```
 
-## Backend
+Todo se arma con primitivas y un solo material; no hay modelos ni texturas de
+terceros.
 
-The project is prepared to communicate with a Python (Flask) backend that receives images and responds with the signal state.  
-The backend URL can be configured in the `TrafficCamera.cs` script.
+## Pruebas
 
-## Applied Best Practices
+```bash
+Unity -batchmode -projectPath . -runTests -testPlatform EditMode -testResults editmode.xml
+Unity -batchmode -projectPath . -runTests -testPlatform PlayMode -testResults playmode.xml
+```
 
-- Use of a Unity-specific `.gitignore`, avoiding temporary files and unnecessary third-party assets.
-- Separation of logic into scripts and use of prefabs for easy reuse.
-- Documentation in key scripts and clear error messages for easier maintenance.
-- Professional and clean folder structure.
-- Version control from the start of the project.
+EditMode (10): reparto proporcional, mínimos, las seis fases, que nunca haya
+dos verdes a la vez y que cada ciclo lea las colas de ese momento. PlayMode
+(5): un auto se detiene antes de la línea con rojo, cruza con verde, varios
+autos se detienen en fila sin chocar, los postes muestran la luz correcta y el
+ciclo siguiente usa las colas contadas.
 
-## Credits
+No tiene CI: correr Unity en GitHub Actions necesita los datos de una licencia
+como secretos del repo.
 
-- [Unity Asset Store](https://assetstore.unity.com/) for the free assets used.
-- Development and documentation: **Michael Lata, Jorge Cueva, Michael Franco, Bryam Mejia**
+## De dónde sale
 
-## License
+En el proyecto, cada cámara de la simulación mandaba una foto a un servidor
+Flask (en una IP fija de la red de la universidad) que contaba los autos y
+devolvía la señal. En el repo (antes `SImulacionCar`) solo quedaron los
+scripts, una escena vacía y dos paquetes de autos del Asset Store, que no se
+pueden publicar; el servidor y la escena de la intersección no se subieron. En
+2026 se rehízo la simulación sin assets de terceros y con el conteo dentro de
+Unity, y se pasó a Unity 6.5.
 
-This project is for academic and experimental use. See the LICENSE
+## Autores
+
+Michael Lata ([@Whiteherobot](https://github.com/Whiteherobot)), Jorge Cueva,
+Michael Franco y Bryam Mejía.
+
+Licencia MIT.
